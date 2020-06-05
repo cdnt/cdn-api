@@ -1,0 +1,24 @@
+{
+    "name": "tinycdn/cdn-api",
+    "type": "library",
+    "description": "Library for works with tinycdn.cloud service API",
+    "authors": [
+        {
+            "name": "Andrey Davidovich",
+            "email": "cri2net@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^7.0"
+    },
+    "require-dev": {
+    },
+    "autoload": {
+        "psr-4": {
+            "Tinycdn\\": "src"
+        }
+    },
+    "keywords": ["tinycdn", "cdn", "tinycdn.cloud"],
+    "homepage": "https://tinycdn.cloud/",
+    "license": "MIT"
+}
