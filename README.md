@@ -19,6 +19,10 @@ $cdn = new \Tinycdn\CdnApi('your-api-token');
 
 try {
     
+    ////////////
+    // Upload //
+    ////////////
+
     // simple upload
     $data1 = $cdn->upload('path/to/file.ext');
     var_dump($data1);
@@ -33,6 +37,29 @@ try {
     $data2 = $cdn->upload('https://images.local/image.jpg', $params);
     var_dump($data2);
 
+
+
+    //////////////////
+    // File aliases //
+    //////////////////
+
+    // create custom URL for file
+    // After this your file also will be accessed by URL http(s)://cdn.tinycdn.cloud/my/custorm/url/file.jpg
+    // Many aliases per file, but url must be unique
+    $alias = $cdn->addAlias($file_id, '/my/custorm/url/file.jpg');
+    var_dump($alias);
+
+    // remove Alias
+    $cdn->deleteAlias($alias_id);
+
+    // get Aliases list
+    $args = [
+        // file_id (int) - File ID
+        // id (int) - Alias id
+        // url (string) = Alias URL
+    ];
+    $list = $cdn->getAliasesList(); // all
+    $list2 = $cdn->getAliasesList($args); // by filter
 
 } catch (Exception $e) {
     echo $e->getMessage();

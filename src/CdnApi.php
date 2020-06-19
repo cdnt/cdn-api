@@ -16,7 +16,17 @@ class CdnApi
         'image',
     ];
 
-    const API_ALL_COLUMNS_FRAGMENT = '
+    const ALIAS_ALL_COLUMNS_FRAGMENT = '
+        fragment fragmentCdnFileAliasFull on CdnFileAlias {
+            id
+            file_id
+            created_at
+            views
+            url
+        }
+    ';
+
+    const FILE_ALL_COLUMNS_FRAGMENT = '
         fragment fragmentCdnFileFull on CdnFile {
             cdn_file_id
             created_at
@@ -65,12 +75,17 @@ class CdnApi
     public function getList(array $args = []) : array
     {
         $args = Api::encodeArguments($args);
-        $query = "{ cdnFile($args) { ...fragmentCdnFileFull } }" . self::API_ALL_COLUMNS_FRAGMENT;
+        $query = "{ cdnFile($args) { ...fragmentCdnFileFull } }" . self::FILE_ALL_COLUMNS_FRAGMENT;
         $response = Api::rawRequest($query, $this->api_url, $this->api_token);
         
         return $response['data']['cdnFile'];
     }
 
+    /**
+     * Get File by ID
+     * @param  integer $id File ID
+     * @return ?array File data
+     */
     public function getFileInfo(int $id) : ?array
     {
         $list = $this->getList(['file_id' => $id]);
@@ -155,6 +170,89 @@ class CdnApi
         return $response['data']['cdnDeleteFile'];
     }
 
+    /**
+     * Add file alias
+     * @param integer $file_id File ID on CDN
+     * @param string  $url     Alias URL
+     * @return array  Alias data
+     */
+    public function addAlias(int $file_id, string $url) : array
+    {
+        $file = $this->getFileInfo($file_id);
+        if ($file === null) {
+            throw new Exception('File not found');
+        }
+
+        $args = [
+            'file_id'      => $file_id,
+            'create_token' => $file['create_token'],
+            'url'          => $url,
+        ];
+        $args = Api::encodeArguments($args);
+
+        $query = "mutation { cdnAddFileAlias($args) { ...fragmentCdnFileAliasFull } }" . self::ALIAS_ALL_COLUMNS_FRAGMENT;
+        $response = Api::rawRequest($query, $this->api_url, $this->api_token);
+
+        return $response['data']['cdnAddFileAlias'];
+    }
+
+    /**
+     * Get list of aliases
+     * @param  array $args assoc array with filters
+     *                     possible keys:
+     *                         file_id (int) - File ID
+     *                         id (int) - Alias id
+     *                         url (string) = Alias URL
+     *                     . OPTIONAL
+     * @return array List of aliases
+     */
+    public function getAliasesList(array $args = []) : array
+    {
+        $args = Api::encodeArguments($args);
+        $query = "{ cdnFileAliases($args) { ...fragmentCdnFileAliasFull } }" . self::ALIAS_ALL_COLUMNS_FRAGMENT;
+        $response = Api::rawRequest($query, $this->api_url, $this->api_token);
+        
+        return $response['data']['cdnFileAliases'];
+    }
+
+    /**
+     * Get Alias by ID
+     * @param  integer $id Alias ID
+     * @return ?array Alias data
+     */
+    public function getAlias(int $id) : ?array
+    {
+        $list = $this->getAliasesList(['id' => $id]);
+        return (empty($list)) ? null : $list[0];
+    }
+
+    /**
+     * Delete File alias
+     * @param  int    $alias_id File alias ID
+     * @return boolean
+     */
+    public function deleteAlias(int $alias_id) : bool
+    {
+        $alias = $this->getAlias($alias_id);
+        if ($alias === null) {
+            throw new Exception('Alias not found');
+        }
+
+        $file = $this->getFileInfo($alias['file_id']);
+        if ($file === null) {
+            throw new Exception('File not found');
+        }
+
+        $args = [
+            'id'           => $alias_id,
+            'create_token' => $file['create_token'],
+        ];
+        $args = Api::encodeArguments($args);
+        $response = Api::rawRequest("mutation { cdnDeleteFileAlias($args) }", $this->api_url, $this->api_token);
+
+        return $response['data']['cdnDeleteFileAlias'];
+    }
+
     protected function addFile(
         string $filename,
         string $md5,
@@ -186,7 +284,7 @@ class CdnApi
 
         $args = Api::encodeArguments($args);
         $response = Api::rawRequest(
-            "mutation { cdnAddFile($args) { ...fragmentCdnFileFull } }" . self::API_ALL_COLUMNS_FRAGMENT,
+            "mutation { cdnAddFile($args) { ...fragmentCdnFileFull } }" . self::FILE_ALL_COLUMNS_FRAGMENT,
             $this->api_url,
             $this->api_token
         );
