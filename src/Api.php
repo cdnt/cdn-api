@@ -115,16 +115,12 @@ class Api
             throw new Exception("Response is not valid JSON");
         }
 
-        $json = $json['data'];
+        $json = (isset($json['data']['data']) || isset($json['data']['errors'])) ? $json['data'] : $json;
 
         if (!empty($json['errors'])) {
-
-            $error = $json['errors'][0];
-            if (isset($error['code'])) {
-                throw new Exception($error['message'], $error['code']);
-            } else {
-                throw new Exception($error['message']);
-            }
+            
+            $code = $json['errors'][0]['code'] ?? 0;
+            throw new Exception($json['errors'][0]['message'], $code);
         }
 
         return $json;

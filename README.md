@@ -54,9 +54,9 @@ try {
 
     // get Aliases list
     $args = [
-        // file_id (int) - File ID
-        // id (int) - Alias id
-        // url (string) = Alias URL
+        // 'file_id' => 10,            // File ID
+        // 'id'      => 15,            // Alias id
+        // 'url'     => '/alias-url/', // Alias URL
     ];
     $list = $cdn->getAliasesList(); // all
     $list2 = $cdn->getAliasesList($args); // by filter
