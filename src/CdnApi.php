@@ -72,13 +72,24 @@ class CdnApi
         return $this->api_url;
     }
 
-    public function getList(array $args = []) : array
+    public function getList(array $args = [], int $from = 0, int $limit = 100) : array
     {
+        $args['from'] = $from;
+        $args['limit'] = $limit;
         $args = Api::encodeArguments($args);
+
         $query = "{ cdnFile($args) { ...fragmentCdnFileFull } }" . self::FILE_ALL_COLUMNS_FRAGMENT;
         $response = Api::rawRequest($query, $this->api_url, $this->api_token);
         
         return $response['data']['cdnFile'];
+    }
+
+    public function getCount(array $args = []) : int
+    {
+        $args = Api::encodeArguments($args);
+        $response = Api::rawRequest("{ cdnFileCount($args) }", $this->api_url, $this->api_token);
+        
+        return $response['data']['cdnFileCount'];
     }
 
     /**
@@ -204,11 +215,16 @@ class CdnApi
      *                         id (int) - Alias id
      *                         url (string) = Alias URL
      *                     . OPTIONAL
+     * @param  integer $from  Offset for list (for pagination). OPTIONAL
+     * @param  integer $limit Max count items in result (for pagination). OPTIONAL
      * @return array List of aliases
      */
-    public function getAliasesList(array $args = []) : array
+    public function getAliasesList(array $args = [], int $from = 0, int $limit = 100) : array
     {
+        $args['from'] = $from;
+        $args['limit'] = $limit;
         $args = Api::encodeArguments($args);
+        
         $query = "{ cdnFileAliases($args) { ...fragmentCdnFileAliasFull } }" . self::ALIAS_ALL_COLUMNS_FRAGMENT;
         $response = Api::rawRequest($query, $this->api_url, $this->api_token);
         
