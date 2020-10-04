@@ -33,6 +33,7 @@ try {
         'type'      => 'image',      // default file
         'filename'  => 'my-img.jpg', // if not set, filename will be detected automatically
         'rule_key'  => 'my-rule',    // see docs for details
+        'folder_id' => 555,          // 0 - root folder. See more about folders
     ];
     $data2 = $cdn->upload('https://images.local/image.jpg', $params);
     var_dump($data2);
@@ -61,6 +62,22 @@ try {
     $list = $cdn->getAliasesList(); // all
     $list2 = $cdn->getAliasesList($args); // by filter
 
+
+
+
+    /////////////
+    // Folders //
+    /////////////
+
+    $filters = [
+        'title' => 'Avatars',
+        'idp'   => 0,
+    ];
+    $list = $cdn->getFoldersList($filters);
+    $folder = $list[0] ?? $cdn->addFolder('Avatars');
+
+    var_dump($folder);
+    
 } catch (Exception $e) {
     echo $e->getMessage();
 }

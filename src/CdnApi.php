@@ -29,6 +29,7 @@ class CdnApi
     const FILE_ALL_COLUMNS_FRAGMENT = '
         fragment fragmentCdnFileFull on CdnFile {
             cdn_file_id
+            folder_id
             created_at
             size
             views
@@ -42,6 +43,22 @@ class CdnApi
             rule_key
             md5
             sha256
+            meta
+        }
+    ';
+
+    const FOLDER_ALL_COLUMNS_FRAGMENT = '
+        fragment fragmentCdnFolderFull on CdnFolder {
+            id
+            idp
+            site_id
+            title
+            created_at
+            updated_at
+            count_files
+            count_folders
+            create_token
+            access_token
             meta
         }
     ';
@@ -100,13 +117,13 @@ class CdnApi
     public function getFileInfo(int $id) : ?array
     {
         $list = $this->getList(['file_id' => $id]);
-        return (empty($list)) ? null : $list[0];
+        return $list[0] ?? null;
     }
 
     /**
      * Upload file to CDN
      * @param  string $path   Path to file (http(s) link is allowed)
-     * @param  array  $params assoc array (supported keys: type, is_public, rule_key)
+     * @param  array  $params assoc array (supported keys: type, is_public, rule_key, folder_id)
      * @return array  File data
      */
     public function upload(string $path, array $params = []) : array
@@ -239,7 +256,7 @@ class CdnApi
     public function getAlias(int $id) : ?array
     {
         $list = $this->getAliasesList(['id' => $id]);
-        return (empty($list)) ? null : $list[0];
+        return $list[0] ?? null;
     }
 
     /**
@@ -269,6 +286,126 @@ class CdnApi
         return $response['data']['cdnDeleteFileAlias'];
     }
 
+    /**
+     * Add folder
+     * @param string  $title Folder name
+     * @param integer $idp   Parent folder ID. 0 - root folder. OPTIONAL
+     * @return array  Folder data
+     */
+    public function addFolder(string $title, int $idp = 0) : array
+    {
+        $args = [
+            'title' => $title,
+            'idp'   => $idp,
+        ];
+        $args = Api::encodeArguments($args);
+
+        $query = "mutation { cdnAddFolder($args) { ...fragmentCdnFolderFull } }" . self::FOLDER_ALL_COLUMNS_FRAGMENT;
+        $response = Api::rawRequest($query, $this->api_url, $this->api_token);
+
+        return $response['data']['cdnAddFolder'];
+    }
+
+    /**
+     * Get list of aliases
+     * @param  array $args Assoc array with filters
+     *                     possible keys:
+     *                         id (int) - Folder id
+     *                         idp (int) - Parent folder ID
+     *                         count_files (int) Count files in folder
+     *                         count_folders (int) Count folders in folder
+     *                         title (string) Folder title
+     *                     . OPTIONAL
+     * @param  integer $from  Offset for list (for pagination). OPTIONAL
+     * @param  integer $limit Max count items in result (for pagination). OPTIONAL
+     * @return array List of aliases
+     */
+    public function getFoldersList(array $args = [], int $from = 0, int $limit = 100) : array
+    {
+        $args['from'] = $from;
+        $args['limit'] = $limit;
+        $args = Api::encodeArguments($args);
+
+        $query = "{ cdnFolder($args) { ...fragmentCdnFolderFull } }" . self::FOLDER_ALL_COLUMNS_FRAGMENT;
+        $response = Api::rawRequest($query, $this->api_url, $this->api_token);
+        
+        return $response['data']['cdnFolder'];
+    }
+
+    /**
+     * Get count of folders by filter
+     * @param  array $args Assoc array with filters
+     *                     possible keys:
+     *                         id (int) - Folder id
+     *                         idp (int) - Parent folder ID
+     *                         count_files (int) Count files in folder
+     *                         count_folders (int) Count folders in folder
+     *                         title (string) Folder title
+     *                     . OPTIONAL
+     * @return integer Count folders
+     */
+    public function getFoldersCount(array $args = []) : int
+    {
+        $args = Api::encodeArguments($args);
+        $response = Api::rawRequest("{ cdnFolderCount($args) }", $this->api_url, $this->api_token);
+        
+        return $response['data']['cdnFolderCount'];
+    }
+
+    /**
+     * Get Folder by ID
+     * @param  integer $id Folder ID
+     * @return ?array Folder data
+     */
+    public function getFolder(int $id) : ?array
+    {
+        $list = $this->getFoldersList(['id' => $id]);
+        return $list[0] ?? null;
+    }
+
+    /**
+     * Update folder by ID
+     * @param  array $data        Assoc array with new data
+     *                            possible keys:
+     *                                idp (int) - Parent folder ID
+     *                                title (string) Folder title
+     * @param  integer $folder_id Folder ID
+     * @return ?array Folder data
+     */
+    public function updateFolder(array $data, int $folder_id) : ?array
+    {
+        $data['id'] = $folder_id;
+        $args = Api::encodeArguments($data);
+        
+        $query = "mutation { cdnEditFolder($args) { ...fragmentCdnFolderFull } }" . self::FOLDER_ALL_COLUMNS_FRAGMENT;
+        $response = Api::rawRequest($query, $this->api_url, $this->api_token);
+        
+        return $response['data']['cdnEditFolder'];
+    }
+
+    /**
+     * Delete folder
+     * @param integer $id           Folder ID. OPTIONAL
+     * @param string  $create_token Folder create_token. OPTIONAL
+     * @return void
+     */
+    public function deleteFolder(int $id, string $create_token = '') : void
+    {
+        if (empty($create_token)) {
+            $folder = $this->getFolder($id);
+            $create_token = $folder['create_token'] ?? '';
+        }
+
+        $args = [
+            'id'           => $id,
+            'create_token' => $create_token,
+        ];
+        $args = Api::encodeArguments($args);
+
+        $query = "mutation { cdnDeleteFolder($args) }";
+        Api::rawRequest($query, $this->api_url, $this->api_token);
+    }
+
     protected function addFile(
         string $filename,
         string $md5,
@@ -277,7 +414,7 @@ class CdnApi
         array $params
     ) : array
     {
-        $is_public = (isset($params['is_public'])) ? boolval($params['is_public']) : true;
+        $is_public = boolval($params['is_public'] ?? true);
         $file_type = 'file';
         if (isset($params['type']) && in_array($params['type'], self::FILE_TYPES)) {
             $file_type = $params['type'];
@@ -296,6 +433,9 @@ class CdnApi
         }
         if (!empty($params['rule_key'])) {
             $args['rule_key'] = $params['rule_key'] . '';
+        }
+        if (!empty($params['folder_id'])) {
+            $args['folder_id'] = round($params['folder_id']);
         }
 
         $args = Api::encodeArguments($args);
