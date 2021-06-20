@@ -12,9 +12,9 @@ class Api
      * @param  string $url       API URL
      * @param  string $token     API token
      * @param  array  $variables Array with variables. OPTIONAL
-     * @return response from API
+     * @return array response from API
      */
-    public static function rawRequest(string $query, string $url, string $token, array $variables = [])
+    public static function rawRequest(string $query, string $url, string $token, array $variables = []) : array
     {
         $data = ['query' => $query];
         if (!empty($variables)) {
@@ -104,13 +104,13 @@ class Api
      * @param  string $response Raw response from API
      * @return array
      */
-    public static function processResponse($response)
+    public static function processResponse($response) : array
     {
         if ($response === false) {
             throw new Exception("Response is false");
         }
 
-        $json = @json_decode($response, true);
+        $json = json_decode($response, true);
         if (($json === false) || ($json === null)) {
             throw new Exception("Response is not valid JSON");
         }

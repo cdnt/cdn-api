@@ -73,6 +73,10 @@ class CdnApi
         return $this;
     }
 
+    /**
+     * @param string $api_url
+     * @return $this
+     */
     public function setApiUrl(string $api_url)
     {
         $this->api_url = $api_url;
