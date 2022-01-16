@@ -120,7 +120,7 @@ class Api
         if (!empty($json['errors'])) {
             
             $code = $json['errors'][0]['code'] ?? 0;
-            throw new Exception($json['errors'][0]['message'], $code);
+            throw new Exception($json['errors'][0]['message'], intval($code));
         }
 
         return $json;
