@@ -38,33 +38,6 @@ try {
     $data2 = $cdn->upload('https://images.local/image.jpg', $params);
     var_dump($data2);
 
-
-
-    //////////////////
-    // File aliases //
-    //////////////////
-
-    // create custom URL for file
-    // After this your file also will be accessed by URL http(s)://cdn.tinycdn.cloud/my/custorm/url/file.jpg
-    // Many aliases per file, but url must be unique
-    $alias = $cdn->addAlias($file_id, '/my/custorm/url/file.jpg');
-    var_dump($alias);
-
-    // remove Alias
-    $cdn->deleteAlias($alias_id);
-
-    // get Aliases list
-    $args = [
-        // 'file_id' => 10,            // File ID
-        // 'id'      => 15,            // Alias id
-        // 'url'     => '/alias-url/', // Alias URL
-    ];
-    $list = $cdn->getAliasesList(); // all
-    $list2 = $cdn->getAliasesList($args); // by filter
-
-
-
-
     /////////////
     // Folders //
     /////////////
